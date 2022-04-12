@@ -222,7 +222,9 @@ exports.updateProfile = async (req, res) => {
 exports.deleteMyProfile = async (req, res) => {
   try {
     const user = await User.findById(req.user._id);
+    const userId = user._id;
     const posts = await user.posts;
+    const followers = await user.followers;
 
     await user.remove();
 
@@ -238,6 +240,14 @@ exports.deleteMyProfile = async (req, res) => {
       await post.remove();
     }
 
+    //REMOVE USER FROM FOLLOWERS FOLLOWING
+    for (let i = 0; i < followers.length; i++) {
+      const follower = await User.findById(followers[i]);
+      const index = follower.following.indexOf(userId);
+      follower.following.splice(index, 1);
+      await follower.save();
+    }
+
     res.status(200).json({
       success: true,
       message: "Profile Deleted",
@@ -249,7 +259,6 @@ exports.deleteMyProfile = async (req, res) => {
     });
   }
 };
-
 
 exports.myProfile = async (req, res) => {
   try {
@@ -265,4 +274,4 @@ exports.myProfile = async (req, res) => {
       message: error.message,
     });
   }
-}
+};
