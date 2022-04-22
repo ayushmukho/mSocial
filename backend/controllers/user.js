@@ -1,5 +1,6 @@
 const User = require("../models/User");
 const Post = require("../models/Post");
+const { sendEmail } = require("../middlewares/sendEmail");
 
 exports.register = async (req, res) => {
   try {
@@ -285,12 +286,11 @@ exports.myProfile = async (req, res) => {
   }
 };
 
-
 exports.getUserProfile = async (req, res) => {
   try {
     const user = await User.findById(req.params.id).populate("posts");
 
-    if(!user) {
+    if (!user) {
       return res.status(404).json({
         success: false,
         message: "User not found",
@@ -307,7 +307,7 @@ exports.getUserProfile = async (req, res) => {
       message: error.message,
     });
   }
-}
+};
 
 exports.getAllUsers = async (req, res) => {
   try {
@@ -323,4 +323,53 @@ exports.getAllUsers = async (req, res) => {
       message: error.message,
     });
   }
-}
+};
+
+exports.forgotPassword = async (req, res) => {
+  try {
+    const user = await User.findOne({ email: req.body.email });
+
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: "User not found",
+      });
+    }
+
+    const resetPasswordToken = user.getResetPasswordToken();
+    await user.save();
+
+    const resetUrl = `${req.protocol}://${req.get(
+      "host"
+    )}/api/v1/password/reset/${resetPasswordToken}`;
+
+    const message = `Reset your password by clicking the link below : \n\n ${resetUrl}`;
+
+    try {
+      await sendEmail({
+        email: user.email,
+        subject: "Reset Password",
+        message,
+      });
+
+      res.status(200).json({
+        success: true,
+        message: `Email sent to ${user.email}`,
+      });
+    } catch (error) {
+      user.resetPasswordToken = undefined;
+      user.resetPasswordExpire = undefined;
+      await user.save();
+
+      res.status(500).json({
+        success: false,
+        message: error.message,
+      });
+    }
+  } catch (error) {
+    res.send(500).json({
+      success: false,
+      message: error.message,
+    });
+  }
+};
