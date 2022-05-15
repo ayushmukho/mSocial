@@ -6,12 +6,14 @@ import { useEffect } from "react";
 
 import { useDispatch, useSelector } from "react-redux";
 import { loadUser } from "./Actions/User";
+import Home from "./Components/Home/Home";
 
 function App() {
   const dispatch = useDispatch();
 
   useEffect(() => {
     dispatch(loadUser());
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const { isAuthenticated } = useSelector((state) => state.user);
@@ -20,7 +22,7 @@ function App() {
     <Router>
       {isAuthenticated && <Header />}
       <Routes>
-        <Route path="/" element={<Login />} />
+        <Route path="/" element={isAuthenticated ? <Home /> : <Login />} />
       </Routes>
     </Router>
   );
